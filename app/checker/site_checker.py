@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+import time
+from dataclasses import dataclass
 from enum import Enum, auto
 
 from loguru import logger
@@ -23,6 +24,8 @@ class CheckResult:
     status: int | None = None
     screenshot: bytes | None = None
     exc: str | None = None
+    latency_ms: float | None = None
+    response_body: str | None = None
 
 
 async def check_site(url: str) -> CheckResult:
@@ -30,22 +33,31 @@ async def check_site(url: str) -> CheckResult:
         browser = await pw.chromium.launch(headless=True)
         page = await browser.new_page()
         try:
+            t0 = time.monotonic()
             response = await page.goto(url, timeout=settings.page_timeout)
+            latency_ms = (time.monotonic() - t0) * 1000
             status = response.status if response else None
 
             if status is not None and status >= settings.http_error_threshold:
                 screenshot = await take_screenshot(page)
-                logger.error(f"HTTP {status} on {url}")
+                response_body: str | None = None
+                try:
+                    response_body = await response.text()
+                except Exception:
+                    pass
+                logger.error(f"HTTP {status} on {url} ({latency_ms:.0f}ms)")
                 return CheckResult(
                     url=url,
                     ok=False,
                     error_type=ErrorType.HTTP_ERROR,
                     status=status,
                     screenshot=screenshot,
+                    latency_ms=latency_ms,
+                    response_body=response_body,
                 )
 
-            logger.info(f"OK [{status}] {url}")
-            return CheckResult(url=url, ok=True, status=status)
+            logger.info(f"OK [{status}] {url} ({latency_ms:.0f}ms)")
+            return CheckResult(url=url, ok=True, status=status, latency_ms=latency_ms)
 
         except PlaywrightTimeout:
             logger.warning(f"Timeout: {url}")

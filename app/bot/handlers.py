@@ -32,12 +32,14 @@ async def status_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         if result is None:
             lines.append(f"⏳ {url} — ещё не проверялся")
         elif result.ok:
-            lines.append(f"✅ {url} — OK [{result.status}]")
+            latency = f", {result.latency_ms:.0f} мс" if result.latency_ms is not None else ""
+            lines.append(f"✅ {url} — OK [{result.status}{latency}]")
         elif result.error_type == ErrorType.TIMEOUT:
             lines.append(f"⏱ {url} — Таймаут")
         else:
             status_info = f"HTTP {result.status}" if result.status else result.exc or "неизвестная ошибка"
-            lines.append(f"🔴 {url} — Ошибка ({status_info})")
+            latency = f", {result.latency_ms:.0f} мс" if result.latency_ms is not None else ""
+            lines.append(f"🔴 {url} — Ошибка ({status_info}{latency})")
 
     await update.message.reply_text("\n".join(lines), parse_mode="HTML")
 
@@ -54,7 +56,8 @@ async def check_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     last_results[url] = result
 
     if result.ok:
-        await update.message.reply_text(f"✅ {url} — OK [{result.status}]")
+        latency = f", {result.latency_ms:.0f} мс" if result.latency_ms is not None else ""
+        await update.message.reply_text(f"✅ {url} — OK [{result.status}{latency}]")
         return
 
     if result.error_type == ErrorType.TIMEOUT:

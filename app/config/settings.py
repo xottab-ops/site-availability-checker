@@ -29,11 +29,14 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     bot_token: str
-    chat_id: str
+    chat_id: str | None = None
+    alarm_chat_id: str
+    log_chat_id: str
     sites: list[str]
     check_interval: int = 60
     page_timeout: int = 30000
     http_error_threshold: int = 400
+    notify_interval: int = 600
 
     @classmethod
     def settings_customise_sources(
