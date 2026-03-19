@@ -29,9 +29,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     bot_token: str
-    chat_id: str | None = None
     alarm_chat_id: str
-    log_chat_id: str
+    log_chat_id: str | None = None
     sites: list[str]
     check_interval: int = 60
     page_timeout: int = 30000
